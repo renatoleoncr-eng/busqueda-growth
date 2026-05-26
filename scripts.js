@@ -152,34 +152,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-
-    // ==========================================================================
-    // 4. Counter Animation (for Analytics Panel mock)
-    // ==========================================================================
-    // Using a simple interval approach for the single number in the demo
-    const h3Element = document.querySelector('.demo-panel-content h3');
-    if (h3Element && !prefersReducedMotion) {
-        const targetText = h3Element.textContent;
-        // Check if it's "+34%"
-        if (targetText.includes('34')) {
-            h3Element.textContent = '+0%';
-            
-            const countObserver = new IntersectionObserver((entries, observer) => {
-                if (entries[0].isIntersecting) {
-                    let count = 0;
-                    const interval = setInterval(() => {
-                        count += 2;
-                        h3Element.textContent = `+${count}%`;
-                        if (count >= 34) {
-                            h3Element.textContent = '+34%';
-                            clearInterval(interval);
-                        }
-                    }, 50);
-                    observer.disconnect();
-                }
-            });
-            
-            countObserver.observe(h3Element);
-        }
-    }
 });
