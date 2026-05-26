@@ -88,10 +88,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
+            // Draw lines between particles and mouse (wow interactive factor)
+            if (mouse.x !== null && mouse.y !== null) {
+                for (let i = 0; i < particles.length; i++) {
+                    const dx = particles[i].x - mouse.x;
+                    const dy = particles[i].y - mouse.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 180) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        const opacity = 1 - (distance / 180);
+                        ctx.strokeStyle = `rgba(6, 182, 212, ${opacity * 0.35})`;
+                        ctx.stroke();
+                    }
+                }
+            }
+            
             animationFrameId = requestAnimationFrame(animateParticles);
         };
         
         // Setup
+        let mouse = { x: null, y: null };
+        
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        
+        window.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(resizeCanvas, 200);
@@ -150,6 +181,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     block: 'start' 
                 });
             }
+        });
+    });
+
+    // ==========================================================================
+    // 4. Card Cursor Spotlight (Glow Effect)
+    // ==========================================================================
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
         });
     });
 });
