@@ -112,13 +112,35 @@ document.addEventListener('DOMContentLoaded', () => {
         // Setup
         let mouse = { x: null, y: null };
         
-        window.addEventListener('mousemove', (e) => {
+        const updateMousePosition = (clientX, clientY) => {
             const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
+            mouse.x = clientX - rect.left;
+            mouse.y = clientY - rect.top;
+        };
+        
+        window.addEventListener('mousemove', (e) => {
+            updateMousePosition(e.clientX, e.clientY);
         });
         
         window.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        // Touch support for Canvas (particles interaction on mobile)
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                updateMousePosition(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                updateMousePosition(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+        
+        window.addEventListener('touchend', () => {
             mouse.x = null;
             mouse.y = null;
         });
@@ -185,9 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================================================
-    // 4. Card Cursor Spotlight (Glow Effect)
+    // 4. Card Cursor Spotlight & Mobile Sweep (Glow Effect)
     // ==========================================================================
-    document.querySelectorAll('.card').forEach(card => {
+    const cards = document.querySelectorAll('.card');
+
+    cards.forEach(card => {
+        // Desktop mouse tracking
         card.addEventListener('mousemove', (e) => {
             const rect = card.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -195,5 +220,84 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.setProperty('--mouse-x', `${x}px`);
             card.style.setProperty('--mouse-y', `${y}px`);
         });
+
+        // Mobile touch tracking
+        const handleTouch = (e) => {
+            if (e.touches.length > 0) {
+                card.dataset.isSweeping = 'false'; // Stop scroll sweep if user touches card
+                const rect = card.getBoundingClientRect();
+                const x = e.touches[0].clientX - rect.left;
+                const y = e.touches[0].clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+                card.classList.add('active-glow');
+            }
+        };
+
+        card.addEventListener('touchstart', handleTouch, { passive: true });
+        card.addEventListener('touchmove', handleTouch, { passive: true });
+        card.addEventListener('touchend', () => {
+            // Keep the glow active briefly, then fade out smoothly
+            setTimeout(() => {
+                card.classList.remove('active-glow');
+            }, 600);
+        });
     });
+
+    // Mobile scroll sweep effect: sweeps a glow spotlight across cards as they enter screen center
+    if (window.innerWidth < 768) {
+        const sweepGlow = (card) => {
+            if (card.dataset.isSweeping === 'true') return;
+            card.dataset.isSweeping = 'true';
+            
+            const rect = card.getBoundingClientRect();
+            const width = rect.width || 300;
+            const height = rect.height || 200;
+            let start = null;
+            const duration = 1200; // 1.2s scan sweep duration
+
+            const step = (timestamp) => {
+                if (!start) start = timestamp;
+                const progress = timestamp - start;
+                const percentage = Math.min(progress / duration, 1);
+
+                // Sweep from left to right along the center horizontal line of the card
+                const x = width * percentage;
+                const y = height / 2;
+
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+
+                if (percentage < 1 && card.classList.contains('active-glow') && card.dataset.isSweeping === 'true') {
+                    requestAnimationFrame(step);
+                } else {
+                    card.dataset.isSweeping = 'false';
+                }
+            };
+            requestAnimationFrame(step);
+        };
+
+        const mobileObserverOptions = {
+            root: null,
+            rootMargin: '-30% 0px -30% 0px', // Active when in the center 40% of the screen
+            threshold: 0
+        };
+
+        const mobileCardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const card = entry.target;
+                if (entry.isIntersecting) {
+                    card.classList.add('active-glow');
+                    sweepGlow(card);
+                } else {
+                    card.classList.remove('active-glow');
+                    card.dataset.isSweeping = 'false';
+                }
+            });
+        }, mobileObserverOptions);
+
+        cards.forEach(card => {
+            mobileCardObserver.observe(card);
+        });
+    }
 });

@@ -229,7 +229,8 @@ p.small {
   opacity: 0;
 }
 
-.card:hover::before {
+.card:hover::before,
+.card.active-glow::before {
   opacity: 1;
 }
 
@@ -238,7 +239,8 @@ p.small {
   z-index: 1;
 }
 
-.card:hover {
+.card:hover,
+.card.active-glow {
   transform: translateY(-4px);
   border-color: rgba(124, 58, 237, 0.3);
   box-shadow: 0 10px 30px -10px rgba(124, 58, 237, 0.2);
